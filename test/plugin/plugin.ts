@@ -1,28 +1,30 @@
-// @flow
-
 import { assert, expect } from 'chai'
 import {
-  type EdgeCorePluginOptions,
-  type EdgeCurrencyPlugin,
-  type EdgeCurrencyTools,
-  type EdgeParsedUri,
+  EdgeCorePluginOptions,
+  EdgeCurrencyPlugin,
+  EdgeCurrencyTools,
+  EdgeIo,
+  EdgeParsedUri,
   makeFakeIo
 } from 'edge-core-js'
 import { before, describe, it } from 'mocha'
 import fetch from 'node-fetch'
 
-import edgeCorePlugins from '../../src/xmrIndex.js'
-import { fakeLog } from '../fakeLog.js'
-import fixtures from './fixtures.json'
+import edgeCorePlugins from '../../src/index'
+import { fakeLog } from '../fakeLog'
+import { nativeIo } from '../nodeNativeIo'
+import typedFixtures from './fixtures.json'
+
+const fixtures: any = typedFixtures
 
 /**
  * Verifies that a promise rejects with a particular error.
  */
-export function expectRejection(
-  promise: Promise<mixed>,
+export async function expectRejection(
+  promise: Promise<unknown>,
   message?: string
-): Promise<mixed> {
-  return promise.then(
+): Promise<void> {
+  return await promise.then(
     ok => {
       throw new Error('Expecting this promise to reject')
     },
@@ -35,13 +37,13 @@ export function expectRejection(
 for (const fixture of fixtures) {
   let tools: EdgeCurrencyTools
 
-  const WALLET_TYPE = fixture.WALLET_TYPE
+  const WALLET_TYPE: string = fixture.WALLET_TYPE
   const keyName = WALLET_TYPE.split('wallet:')[1].split('-')[0] + 'Key'
   const address = WALLET_TYPE.split('wallet:')[1].split('-')[0] + 'Address'
 
   let randomIndex = 0
   const len = fixture.key
-  const fakeIo = {
+  const fakeIo: EdgeIo = {
     ...makeFakeIo(),
     random: size => {
       if (randomIndex + size > len) {
@@ -55,10 +57,10 @@ for (const fixture of fixtures) {
     initOptions: {},
     io: fakeIo,
     log: fakeLog,
-    nativeIo: {},
+    nativeIo,
     pluginDisklet: fakeIo.disklet
   }
-  const factory = edgeCorePlugins[fixture.pluginName]
+  const factory = edgeCorePlugins[fixture.pluginName as 'beldex']
   const plugin: EdgeCurrencyPlugin = factory(opts)
 
   describe(`Info for Wallet type ${WALLET_TYPE}`, function () {
@@ -71,18 +73,16 @@ for (const fixture of fixtures) {
   })
 
   describe(`createPrivateKey for Wallet type ${WALLET_TYPE}`, function () {
-    before('Tools', function () {
-      return plugin.makeCurrencyTools().then(currencyTools => {
-        tools = currencyTools
-      })
+    before('Tools', async function () {
+      const currencyTools = await plugin.makeCurrencyTools()
+      tools = currencyTools
     })
 
     it('Create valid key', async function () {
       const keys = await tools.createPrivateKey(WALLET_TYPE)
-      assert.equal(!keys, false)
       assert.equal(typeof keys[keyName], 'string')
-      const length1 = keys.moneroSpendKeyPrivate.length
-      const length2 = keys.moneroSpendKeyPublic.length
+      const length1 = keys.beldexSpendKeyPrivate.length
+      const length2 = keys.beldexSpendKeyPublic.length
       assert.equal(length1, 64)
       assert.equal(length2, 64)
     })
@@ -90,11 +90,10 @@ for (const fixture of fixtures) {
 
   describe(`derivePublicKey for Wallet type ${WALLET_TYPE}`, function () {
     before('Plugin', function () {
-      before('Tools', function () {
-        return plugin.makeCurrencyTools().then(currencyTools => {
-          tools = currencyTools
-          return tools.createPrivateKey(WALLET_TYPE)
-        })
+      before('Tools', async function () {
+        const currencyTools = await plugin.makeCurrencyTools()
+        tools = currencyTools
+        return await tools.createPrivateKey(WALLET_TYPE)
       })
     })
 
@@ -129,10 +128,9 @@ for (const fixture of fixtures) {
   })
 
   describe(`parseUri for Wallet type ${WALLET_TYPE}`, function () {
-    before('Tools', function () {
-      return plugin.makeCurrencyTools().then(currencyTools => {
-        tools = currencyTools
-      })
+    before('Tools', async function () {
+      const currencyTools = await plugin.makeCurrencyTools()
+      tools = currencyTools
     })
 
     it('address only', async function () {
@@ -143,18 +141,18 @@ for (const fixture of fixtures) {
       assert.equal(parsedUri.nativeAmount, undefined)
       assert.equal(parsedUri.currencyCode, undefined)
     })
-    it('invalid address 0', function () {
-      return expectRejection(
+    it('invalid address 0', async function () {
+      return await expectRejection(
         tools.parseUri(fixture.parseUri['invalid address'][0])
       )
     })
-    it('invalid address 1', function () {
-      return expectRejection(
+    it('invalid address 1', async function () {
+      return await expectRejection(
         tools.parseUri(fixture.parseUri['invalid address'][1])
       )
     })
-    it('invalid address 2', function () {
-      return expectRejection(
+    it('invalid address 2', async function () {
+      return await expectRejection(
         tools.parseUri(fixture.parseUri['invalid address'][2])
       )
     })
@@ -276,11 +274,10 @@ for (const fixture of fixtures) {
     })
   })
 
-  describe(`encodeUri for Wallet type ${WALLET_TYPE}`, async function () {
-    before('Tools', function () {
-      return plugin.makeCurrencyTools().then(currencyTools => {
-        tools = currencyTools
-      })
+  describe(`encodeUri for Wallet type ${WALLET_TYPE}`, function () {
+    before('Tools', async function () {
+      const currencyTools = await plugin.makeCurrencyTools()
+      tools = currencyTools
     })
     it('address only', async function () {
       const encodedUri = await tools.encodeUri(
@@ -288,18 +285,18 @@ for (const fixture of fixtures) {
       )
       assert.equal(encodedUri, fixture.encodeUri['address only'][1])
     })
-    it('invalid address 0', function () {
-      return expectRejection(
+    it('invalid address 0', async function () {
+      return await expectRejection(
         tools.encodeUri(fixture.encodeUri['invalid address'][0])
       )
     })
-    it('invalid address 1', function () {
-      return expectRejection(
+    it('invalid address 1', async function () {
+      return await expectRejection(
         tools.encodeUri(fixture.encodeUri['invalid address'][1])
       )
     })
-    it('invalid address 2', function () {
-      return expectRejection(
+    it('invalid address 2', async function () {
+      return await expectRejection(
         tools.encodeUri(fixture.encodeUri['invalid address'][2])
       )
     })
@@ -327,8 +324,8 @@ for (const fixture of fixtures) {
         fixture.encodeUri['address, amount, label, & message'][1]
       )
     })
-    it('invalid currencyCode', function () {
-      return expectRejection(
+    it('invalid currencyCode', async function () {
+      return await expectRejection(
         tools.encodeUri(fixture.encodeUri['invalid currencyCode'][0])
       )
     })

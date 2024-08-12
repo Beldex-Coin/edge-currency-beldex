@@ -1,11 +1,17 @@
-// @flow
-
 import 'regenerator-runtime/runtime'
 
-import { makeMoneroPlugin } from './xmrPlugin.js'
+import type { EdgeCorePlugins } from 'edge-core-js/types'
+
+import { makeBeldexPlugin } from './beldexPlugin'
+
+declare global {
+  interface Window {
+    addEdgeCorePlugins?: (plugins: EdgeCorePlugins) => void
+  }
+}
 
 const edgeCorePlugins = {
-  monero: makeMoneroPlugin
+  beldex: makeBeldexPlugin
 }
 
 export default edgeCorePlugins

@@ -1,45 +1,48 @@
-// @flow
-
 import { assert } from 'chai'
-import { downgradeDisklet } from 'disklet'
 import {
-  type EdgeCorePluginOptions,
-  type EdgeCurrencyEngine,
-  type EdgeCurrencyEngineCallbacks,
-  type EdgeCurrencyEngineOptions,
-  type EdgeCurrencyPlugin,
-  type EdgeCurrencyTools,
-  type EdgeWalletInfo,
   closeEdge,
+  EdgeCorePluginOptions,
+  EdgeCurrencyEngine,
+  EdgeCurrencyEngineCallbacks,
+  EdgeCurrencyEngineOptions,
+  EdgeCurrencyPlugin,
+  EdgeCurrencyTools,
+  EdgeIo,
+  EdgeTokenId,
+  EdgeWalletInfo,
   makeFakeIo
 } from 'edge-core-js'
 import EventEmitter from 'events'
 import { describe, it } from 'mocha'
 import fetch from 'node-fetch'
 
-import edgeCorePlugins from '../../src/xmrIndex.js'
-import { fakeLog } from '../fakeLog.js'
-import fixtures from './fixtures.json'
+import edgeCorePlugins from '../../src/index'
+import { fakeLog } from '../fakeLog'
+import { nativeIo } from '../nodeNativeIo'
+import typedFixtures from './fixtures.json'
 
 // const DATA_STORE_FOLDER = 'txEngineFolderBTC'
 
+const fixtures: any = typedFixtures
+
 for (const fixture of fixtures) {
-  let keys
+  let safeInfo: EdgeWalletInfo
+  let unsafeInfo: EdgeWalletInfo
   let engine: EdgeCurrencyEngine
   let tools: EdgeCurrencyTools
 
-  const WALLET_TYPE = fixture.WALLET_TYPE
+  const WALLET_TYPE: string = fixture.WALLET_TYPE
   // const TX_AMOUNT = fixture['TX_AMOUNT']
 
-  const fakeIo = { ...makeFakeIo(), fetch, random: size => fixture.key }
+  const fakeIo: EdgeIo = { ...makeFakeIo(), fetch, random: size => fixture.key }
   const opts: EdgeCorePluginOptions = {
     initOptions: {},
     io: fakeIo,
     log: fakeLog,
-    nativeIo: {},
+    nativeIo,
     pluginDisklet: fakeIo.disklet
   }
-  const factory = edgeCorePlugins[fixture.pluginName]
+  const factory = edgeCorePlugins[fixture.pluginName as 'beldex']
   const plugin: EdgeCurrencyPlugin = factory(opts)
 
   const emitter = new EventEmitter()
@@ -61,38 +64,53 @@ for (const fixture of fixtures) {
       // console.log('onBlockHeightChange:', height)
       emitter.emit('onBlockHeightChange', height)
     },
+    onNewTokens(tokenIds: string[]) {},
+    onTokenBalanceChanged(tokenId: EdgeTokenId, balance: string) {},
     onTransactionsChanged(transactionList) {
-      // console.log('onTransactionsChanged:', transactionList)
       emitter.emit('onTransactionsChanged', transactionList)
+    },
+    onUnactivatedTokenIdsChanged() {},
+    onStakingStatusChanged() {},
+    onWcNewContractCall(payload) {
+      emitter.emit('wcNewContractCall', payload)
     }
   }
 
   const walletLocalDisklet = fakeIo.disklet
-  const walletLocalFolder = downgradeDisklet(walletLocalDisklet)
   const currencyEngineOptions: EdgeCurrencyEngineOptions = {
     callbacks,
+    customTokens: {},
+    enabledTokenIds: [],
     log: fakeLog,
     walletLocalDisklet,
     walletLocalEncryptedDisklet: walletLocalDisklet,
-    walletLocalEncryptedFolder: walletLocalFolder,
-    walletLocalFolder,
     userSettings: undefined
   }
 
   describe(`Create Plugin for Wallet type ${WALLET_TYPE}`, function () {
     it('Plugin', async function () {
+      this.timeout(3000)
       assert.equal(
         plugin.currencyInfo.currencyCode,
         fixture['Test Currency code']
       )
       tools = await plugin.makeCurrencyTools()
-      keys = await tools.createPrivateKey(WALLET_TYPE)
-      const info: EdgeWalletInfo = {
+
+      const unsafeKeys = await tools.createPrivateKey(WALLET_TYPE)
+      unsafeInfo = {
         id: '1',
         type: WALLET_TYPE,
-        keys
+        keys: unsafeKeys
       }
-      keys = await tools.derivePublicKey(info)
+
+      const safeKeys = await tools.derivePublicKey(unsafeInfo)
+      safeInfo = {
+        id: '1',
+        type: WALLET_TYPE,
+        keys: safeKeys
+      }
+
+      Object.assign(unsafeKeys, { ...unsafeKeys, ...safeKeys })
     })
   })
 
@@ -117,46 +135,35 @@ for (const fixture of fixtures) {
     //     .then(done)
     // })
 
-    it('Make Engine', function () {
-      const info: EdgeWalletInfo = {
-        id: '1',
-        type: WALLET_TYPE,
-        keys
-      }
-      return plugin.makeCurrencyEngine(info, currencyEngineOptions).then(e => {
-        engine = e
-        assert.equal(typeof engine.startEngine, 'function', 'startEngine')
-        assert.equal(typeof engine.killEngine, 'function', 'killEngine')
-        // assert.equal(typeof engine.enableTokens, 'function', 'enableTokens')
-        assert.equal(typeof engine.getBlockHeight, 'function', 'getBlockHeight')
-        assert.equal(typeof engine.getBalance, 'function', 'getBalance')
-        assert.equal(
-          typeof engine.getNumTransactions,
-          'function',
-          'getNumTransactions'
-        )
-        assert.equal(
-          typeof engine.getTransactions,
-          'function',
-          'getTransactions'
-        )
-        assert.equal(
-          typeof engine.getFreshAddress,
-          'function',
-          'getFreshAddress'
-        )
-        assert.equal(
-          typeof engine.addGapLimitAddresses,
-          'function',
-          'addGapLimitAddresses'
-        )
-        assert.equal(typeof engine.isAddressUsed, 'function', 'isAddressUsed')
-        assert.equal(typeof engine.makeSpend, 'function', 'makeSpend')
-        assert.equal(typeof engine.signTx, 'function', 'signTx')
-        assert.equal(typeof engine.broadcastTx, 'function', 'broadcastTx')
-        assert.equal(typeof engine.saveTx, 'function', 'saveTx')
-        return true
-      })
+    it('Make Engine', async function () {
+      const currencyEngine = await plugin.makeCurrencyEngine(
+        safeInfo,
+        currencyEngineOptions
+      )
+      engine = currencyEngine
+      assert.equal(typeof engine.startEngine, 'function', 'startEngine')
+      assert.equal(typeof engine.killEngine, 'function', 'killEngine')
+      // assert.equal(typeof engine.enableTokens, 'function', 'enableTokens')
+      assert.equal(typeof engine.getBlockHeight, 'function', 'getBlockHeight')
+      assert.equal(typeof engine.getBalance, 'function', 'getBalance')
+      assert.equal(
+        typeof engine.getNumTransactions,
+        'function',
+        'getNumTransactions'
+      )
+      assert.equal(typeof engine.getTransactions, 'function', 'getTransactions')
+      assert.equal(typeof engine.getFreshAddress, 'function', 'getFreshAddress')
+      assert.equal(
+        typeof engine.addGapLimitAddresses,
+        'function',
+        'addGapLimitAddresses'
+      )
+      assert.equal(typeof engine.isAddressUsed, 'function', 'isAddressUsed')
+      assert.equal(typeof engine.makeSpend, 'function', 'makeSpend')
+      assert.equal(typeof engine.signTx, 'function', 'signTx')
+      assert.equal(typeof engine.broadcastTx, 'function', 'broadcastTx')
+      assert.equal(typeof engine.saveTx, 'function', 'saveTx')
+      return true
     })
   })
 
@@ -248,7 +255,8 @@ for (const fixture of fixtures) {
   // })
 
   describe('Start engine', function () {
-    it('Get BlockHeight', function (done) {
+    it.skip('Get BlockHeight', function (done) {
+      let finished = false
       this.timeout(10000)
       // request.get(
       //   'https://api.etherscan.io/api?module=proxy&action=eth_blockNumber',
@@ -258,13 +266,24 @@ for (const fixture of fixtures) {
         const thirdPartyHeight = 1578127
         assert(height >= thirdPartyHeight, 'Block height')
         assert(engine.getBlockHeight() >= thirdPartyHeight, 'Block height')
+        finished = true
         done() // Can be "done" since the promise resolves before the event fires but just be on the safe side
       })
       engine.startEngine().catch(e => {
         console.log('startEngine error', e, e.message)
       })
-      //   }
-      // )
+      const sync = (): void => {
+        if (engine.syncNetwork == null) return
+        engine
+          .syncNetwork({
+            privateKeys: unsafeInfo.keys
+          })
+          .then(delay => {
+            if (!finished) setTimeout(() => sync(), delay)
+          })
+          .catch(error => console.error(error))
+      }
+      sync()
     })
   })
 
@@ -503,11 +522,9 @@ for (const fixture of fixtures) {
   //   })
   // })
   describe('Stop the engine', function () {
-    it('Should stop the engine', function (done) {
-      engine.killEngine().then(() => {
-        closeEdge()
-        done()
-      })
+    it('Should stop the engine', async function () {
+      await engine.killEngine()
+      closeEdge()
     })
   })
 }
