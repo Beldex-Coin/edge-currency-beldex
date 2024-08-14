@@ -1,3 +1,5 @@
 /build/
 /coverage/
 /lib/
+/src/beldex-utils/beldex-keyimage-cache.js
+/src/beldex-utils/ResponseParser.js

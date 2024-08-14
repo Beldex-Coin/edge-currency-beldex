@@ -1,29 +1,16 @@
-/**
- * Created by paul on 8/26/17.
- */
-// @flow
+import type { EdgeTransaction } from 'edge-core-js'
 
-import { type EdgeTransaction } from 'edge-core-js/types'
-
-import { currencyInfo } from './xmrInfo.js'
+import { currencyInfo } from './beldexInfo'
 
 export const DATA_STORE_FILE = 'txEngineFolder/walletLocalData.json'
 export const PRIMARY_CURRENCY = currencyInfo.currencyCode
 
-export type MoneroSettings = {
-  mymoneroApiServers: string[]
-}
-
-export class WalletLocalData {
+export class BeldexLocalData {
   blockHeight: number
   lastAddressQueryHeight: number
-  lockedXmrBalance: string
+  lockedBdxBalance: string
   nextNonce: string
   hasLoggedIn: boolean
-  moneroAddress: string
-  moneroViewKeyPrivate: string
-  moneroViewKeyPublic: string
-  moneroSpendKeyPublic: string
   totalBalances: { [currencyCode: string]: string }
   enabledTokens: string[]
   transactionsObj: { [currencyCode: string]: EdgeTransaction[] }
@@ -31,13 +18,13 @@ export class WalletLocalData {
   constructor(jsonString: string | null) {
     this.blockHeight = 0
 
-    const totalBalances: { [currencyCode: string]: string } = { XMR: '0' }
+    const totalBalances: { [currencyCode: string]: string } = { BDX: '0' }
     this.totalBalances = totalBalances
 
     this.nextNonce = '0'
 
     this.lastAddressQueryHeight = 0
-    this.lockedXmrBalance = '0'
+    this.lockedBdxBalance = '0'
 
     // Dumb extra local var needed to make Flow happy
     const transactionsObj: {
@@ -45,10 +32,6 @@ export class WalletLocalData {
     } = {}
     this.transactionsObj = transactionsObj
 
-    this.moneroAddress = ''
-    this.moneroViewKeyPrivate = ''
-    this.moneroViewKeyPublic = ''
-    this.moneroSpendKeyPublic = ''
     this.hasLoggedIn = false
     this.enabledTokens = [PRIMARY_CURRENCY]
     if (jsonString !== null) {
@@ -63,20 +46,8 @@ export class WalletLocalData {
       if (typeof data.lastAddressQueryHeight === 'string') {
         this.lastAddressQueryHeight = data.lastAddressQueryHeight
       }
-      if (typeof data.lockedXmrBalance === 'string') {
-        this.lockedXmrBalance = data.lockedXmrBalance
-      }
-      if (typeof data.moneroAddress === 'string') {
-        this.moneroAddress = data.moneroAddress
-      }
-      if (typeof data.moneroViewKeyPrivate === 'string') {
-        this.moneroViewKeyPrivate = data.moneroViewKeyPrivate
-      }
-      if (typeof data.moneroViewKeyPublic === 'string') {
-        this.moneroViewKeyPublic = data.moneroViewKeyPublic
-      }
-      if (typeof data.moneroSpendKeyPublic === 'string') {
-        this.moneroSpendKeyPublic = data.moneroSpendKeyPublic
+      if (typeof data.lockedBdxBalance === 'string') {
+        this.lockedBdxBalance = data.lockedBdxBalance
       }
       if (typeof data.totalBalances !== 'undefined') {
         this.totalBalances = data.totalBalances

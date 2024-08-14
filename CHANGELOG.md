@@ -1,5 +1,86 @@
 # edge-currency-monero
 
+# Unreleased
+
+# 1.3.1 (2024-03-21)
+
+- fixed: Include missing files in the NPM package.
+
+# 1.3.0 (2024-03-21)
+
+- changed: Switch our codebase from Flow to TypeScript.
+
+# 1.2.0 (2024-03-20)
+
+- added: Report legacy payment ID's using the new core `memo` transaction property.
+- removed: Only bundle the package in CJS-format, and drop the ESM output.
+- removed: Stop supporting undocumented `getTransaction` options.
+
+# 1.1.1 (2023-08-15)
+
+- fixed: Fixed address transaction cleaner broken for wallets with no transaction history.
+
+# 1.1.0 (2023-08-11)
+
+- added: Support custom servers via `enableCustomServers` and `beldexLightwalletServer` user settings.
+
+# 1.0.0 (2023-03-28)
+
+- fixed: Return the correct `walletId` on `EdgeTransaction` instances.
+- fixed: Add a missing `await` to `saveTx`, ensuring the transaction is on-disk.
+- changed: Upgrade to react-native-mymonero-core v0.3.0.
+
+# 0.6.0 (2023-03-28)
+
+- changed: Allow engine to run without private keys. This requires edge-core-js v0.19.47 or greater.
+
+# 0.5.5 (2023-01-10)
+
+- Add `getMaxSpendable`
+- Upgrade edge-core-js to v0.19.36
+- Upgrade react-native-mymonero-core to v0.2.7
+
+# 0.5.4 (2022-11-30)
+
+- Reduce transaction changed callbacks on wallet initialization
+
+# 0.5.3 (2022-08-26)
+
+- changed: Update spending constants to match upstream MyMonero SDK.
+
+# 0.5.2 (2022-08-13)
+
+- fixed: Incorrect amounts after spend.
+
+# 0.5.1 (2022-08-13)
+
+- fixed: Stop randomly crashing while sending funds.
+
+# 0.5.0 (2022-08-11)
+
+- changed: Upgrade to react-native-mymonero-core v0.2.0, with its new API.
+
+# 0.4.2 (2022-08-03)
+
+- fixed: Set `addressesChecked` to `false` on resync
+
+# 0.4.1 (2022-05-11)
+
+- fixed: Fix syncing when the user settings are empty
+
+# 0.4.0 (2022-01-11)
+
+- added: Move the forked code out of mymonero-core-js directly into this repo.
+- changed: Require react-native-mymonero-core ^0.1.2.
+
+# 0.3.4 (2022-01-11)
+
+- Fix git urls
+
+# 0.3.3 (2021-09-28)
+
+- Reformat spendable balance error into 3 lines
+
 # 0.3.2 (2021-06-03)
 
 - Remove icon URLs

@@ -1,5 +1,6 @@
 [ignore]
 <PROJECT_ROOT>/lib/.*
+.*/node_modules/react-native/.*
 
 [include]
 
@@ -8,3 +9,4 @@
 [lints]
 
 [options]
+esproposal.optional_chaining=enable
