@@ -45,7 +45,7 @@
     "@babel/preset-env": "^7.0.0",
     "@babel/preset-typescript": "^7.23.3",
     "@babel/runtime": "^7.0.0",
-    "@bdxi/beldex-client": "https://github.com/TechGoku/beldex-client.git",
+    "@bdxi/beldex-client": "https://github.com/Beldex-Coin/beldex-client.git",
     "@types/chai": "^4.3.4",
     "@types/mocha": "^10.0.1",
     "@types/node-fetch": "^2.6.3",
@@ -68,7 +68,7 @@
     "mocha": "^10.0.0",
     "node-fetch": "^2.1.2",
     "prettier": "^2.2.0",
-    "react-native-beldex-core": "https://github.com/TechGoku/react-native-beldex-core.git",
+    "react-native-beldex-core": "https://github.com/Beldex-Coin/react-native-beldex-core.git",
     "rimraf": "^2.6.2",
     "sucrase": "^3.9.5",
     "typescript": "~4.4.0",
@@ -77,7 +77,7 @@
     "yarn-deduplicate": "^6.0.1"
   },
   "peerDependencies": {
-    "react-native-beldex-core": "https://github.com/TechGoku/react-native-beldex-core.git"
+    "react-native-beldex-core": "https://github.com/Beldex-Coin/react-native-beldex-core.git"
   },
 
   "react-native": "./lib/bdxIndex.js"
